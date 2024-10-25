@@ -7,5 +7,5 @@ abstract class UniCallbackTestService {
   /// 更新定位信息
   void doCallbackAction0(UniCallback<LocationInfoModel> callback);
 
-  void doCallbackAction1(UniCallback<String> callback);
+  void doCallbackAction1(UniCallback<void> callback);
 }

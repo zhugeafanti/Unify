@@ -52,8 +52,8 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () {
                     // 方式2：通过方法参数定义 UniCallback 对象
                     UniCallbackTestService.doCallbackAction1(
-                        UniCallback<String>((value, disposable) {
-                      print('【doCallbackAction1】- uniCallback value: $value');
+                        UniCallback<void>((value, disposable) {
+                      // print('【doCallbackAction1】- uniCallback value:}');
                       // 方式2：释放资源
                       disposable.dispose();
                     }));

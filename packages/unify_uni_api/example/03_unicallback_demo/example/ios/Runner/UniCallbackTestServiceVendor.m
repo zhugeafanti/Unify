@@ -60,12 +60,21 @@ UNI_EXPORT(UniCallbackTestServiceVendor)
 */
 - (void)doCallbackAction0:(OnDoCallbackAction0Callback*)callback error:(FlutterError *_Nullable *_Nonnull)error {
     self.action0Callback = callback;
+    self.action0Callback.delegate = self;
 }
 
 - (void)doCallbackAction1:(OnDoCallbackAction1Callback*)callback error:(FlutterError *_Nullable *_Nonnull)error {
     if (callback) {
-        [callback onEvent:@"I come from the function doCallbackAction1"];
+        [callback onEvent];
+        callback.delegate = self;
     }
 }
+
+#pragma mark - UFUniCallbackDispose
+
+- (void)disposeCallback:(id)params {
+    NSLog(@"Call %s success! params = %@", _cmd, params);
+}
+
 
 @end

@@ -1,5 +1,8 @@
 package com.example.unicallback_demo_example;
 
+import android.util.Log;
+
+import com.example.unifluttermodule_demo.UFUniCallback;
 import com.example.unifluttermodule_demo.UniCallbackTestService;
 
 public class UniCallbackTestServiceImpl implements UniCallbackTestService {
@@ -22,6 +25,11 @@ public class UniCallbackTestServiceImpl implements UniCallbackTestService {
      */
     @Override
     public void doCallbackAction1(OnDoCallbackAction1Callback callback) {
-        callback.onEvent("I come from the function doCallbackAction1");
+        callback.onEvent();
+    }
+
+    @Override
+    public void disposeCallback(UFUniCallback uniCallback) {
+        Log.d("UniCallback", "call disposeCallback success!");
     }
 }

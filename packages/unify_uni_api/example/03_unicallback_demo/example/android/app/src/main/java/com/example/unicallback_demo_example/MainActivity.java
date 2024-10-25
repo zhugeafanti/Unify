@@ -2,6 +2,7 @@ package com.example.unicallback_demo_example;
 
 import androidx.annotation.NonNull;
 
+import com.example.unifluttermodule_demo.UFUniCallbackDispatcher;
 import com.example.unifluttermodule_demo.UniCallbackTestServiceRegister;
 
 import io.flutter.embedding.android.FlutterActivity;
