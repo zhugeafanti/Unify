@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 class UniCallbackManager {
   static UniCallbackManager${nullSafty ? "?" : ""} _instance;
   static ${nullSafty ? "late" : ""} BasicMessageChannel _channel;
+  static ${nullSafty ? "late" : ""} BasicMessageChannel _disposeChannel;
 
   static UniCallbackManager getInstance() {
     _instance ??= UniCallbackManager._internal();
@@ -28,8 +29,7 @@ class UniCallbackManager {
       List<UniCallback> callbacks = [];
       callbacks.addAll(uniCallbackCache.values);
       for (final callback in callbacks) {
-$generate
-        
+        $generate
         if (callback.getType() == int) {
           (callback as UniCallback<int>).onEvent(data as int, disposable);
           continue;
@@ -37,6 +37,11 @@ $generate
         
         if (callback.getType() == String) {
           (callback as UniCallback<String>).onEvent(data as String, disposable);
+          continue;
+        }
+
+        if (callback.getType().toString() == 'void') {
+          callback.onEvent(data, disposable);
           continue;
         }
 
@@ -56,6 +61,14 @@ $generate
         }        
       }
     });
+
+    _disposeChannel = const BasicMessageChannel<Object?>(
+        'com.didi.flutter.uni_api.UniCallbackManager.callback_channel.dispose_$channelSuffix',
+        StandardMessageCodec());
+  }
+
+  void syncDispose(Map<String, dynamic> params) {
+    _disposeChannel.send(params);
   }
 }
 ''';

@@ -36,6 +36,8 @@ import 'package:unify_flutter/utils/extension/string_extension.dart';
 import 'package:unify_flutter/utils/template_internal/dart/uni_callback_manager.dart';
 import 'package:unify_flutter/utils/utils.dart';
 
+import 'dispatcher.dart';
+
 // Fixme 用 Delegate 抽走
 abstract class ModuleGenerator {
   static String javaCode(Module module, UniAPIOptions options) {
@@ -68,6 +70,14 @@ abstract class ModuleGenerator {
           fullClassName: 'io.flutter.plugin.common.StandardMessageCodec'),
       JavaCustomNestedImports(module.inputFile, options,
           methods: module.methods, excludeImports: [typeUniCallback]),
+      if (isUsedUniCallback(module)) ...[
+        JavaImport(
+            fullClassName:
+                '${options.javaPackageName}.${options.javaUniAPIPrefix}$typeUniCallback'),
+        JavaImport(
+            fullClassName:
+                '${options.javaPackageName}.${options.javaUniAPIPrefix}$kUniCallbackDispose')
+      ],
       EmptyLine(),
       Comment(
           comments: [uniNativeModuleDesc, ...module.codeComments],
@@ -76,6 +86,9 @@ abstract class ModuleGenerator {
           className: module.name,
           isPublic: true,
           isInterface: true,
+          parentClass: isUsedUniCallback(module)
+              ? '${options.objcUniAPIPrefix}$kUniCallbackDispose'
+              : null,
           injectedJavaCodes: (depth) => [
                 if (module.methods.map((e) => e.isAsync).contains(true))
                   JavaClassAsyncResult(depth: depth),
@@ -139,6 +152,10 @@ abstract class ModuleGenerator {
               'static ${options.javaPackageName}.$projectName.UniModel.map'),
       JavaCustomNestedImports(module.inputFile, options,
           methods: module.methods, excludeImports: [typeUniCallback]),
+      if (isUsedUniCallback(module))
+        JavaImport(
+            fullClassName:
+                '${options.javaPackageName}.${CallbackDispatcherGenerator.className(options)}'),
       EmptyLine(),
       JavaClass(
           className: '${module.name}Register',
@@ -156,145 +173,165 @@ abstract class ModuleGenerator {
                       Variable(AstCustomType(module.name), 'impl')
                     ],
                     isStatic: true,
-                    body: (depth) => module.methods
-                        .where((method) => method.name != module.name)
-                        .map((method) => ScopeBlock(
-                            depth: depth + 1,
-                            body: (depth) => [
-                                  OneLine(
-                                      depth: depth,
-                                      body:
-                                          'BasicMessageChannel<Object> channel ='),
-                                  OneLine(
-                                      depth: depth + 2,
-                                      body:
-                                          'new BasicMessageChannel<>(binaryMessenger, "${_getModuleRegisterChannelName(module, method)}", new StandardMessageCodec());'),
-                                  IfBlock(
-                                      OneLine(
-                                          body: 'impl != null',
-                                          hasNewline: false), (depth) {
-                                    final ret = <CodeUnit>[];
-                                    ret.add(OneLine(
-                                        depth: depth,
-                                        body:
-                                            '${options.javaUniAPIPrefix}$kUniAPI.registerModule(impl);'));
-                                    ret.add(OneLine(
-                                        depth: depth,
-                                        body:
-                                            'channel.setMessageHandler((message, reply) -> {'));
-                                    ret.add(OneLine(
-                                        depth: depth + 1,
-                                        body:
-                                            'Map<String, Object> wrapped = new HashMap<>();'));
-                                    ret.add(OneLine(
-                                        depth: depth + 1, body: 'try {'));
-                                    ret.add(OneLine(
-                                        depth: depth + 2,
-                                        body:
-                                            'Map<String, Object> params = (Map<String, Object>) message;'));
-
-                                    // 将 Channel 调用传过来的数据转换成方法调用参数
-                                    // 常规参数解析
-                                    for (final param in method.parameters) {
-                                      if (param.type.astType() ==
-                                          typeUniCallback) {
-                                        // 这里第二个参数，取出的是对应 Callback 的唯一名称，这个从 Native 带到 Dart 再带回来
-                                        final callbackClassName =
-                                            '${module.name}.${JavaClassUniCallback.getName(method.name, param.name)}';
-                                        ret.add(OneLine(
+                    body: (depth) => [
+                          OneLine(
+                              depth: depth + 1,
+                              body: '${options.javaUniAPIPrefix}$kUniAPI.init(binaryMessenger);'),
+                          ...module.methods
+                              .where((method) => method.name != module.name)
+                              .map((method) => ScopeBlock(
+                                  depth: depth + 1,
+                                  body: (depth) => [
+                                        OneLine(
+                                            depth: depth,
+                                            body:
+                                                'BasicMessageChannel<Object> channel ='),
+                                        OneLine(
                                             depth: depth + 2,
                                             body:
-                                                '$callbackClassName ${param.name} = new ${module.name}.${JavaClassUniCallback.getName(method.name, param.name)}(binaryMessenger, (String) params.get("${param.name}"));'));
-                                      } else {
-                                        final decoded = param.type
-                                            .convertJavaJson2Obj(
-                                                vname:
-                                                    'params.get("${param.name}")');
-                                        ret.add(OneLine(
-                                            depth: depth + 2,
-                                            body:
-                                                '${param.type.javaType()} ${param.name} = params.containsKey("${param.name}") ? $decoded;'));
-                                      }
-                                    }
-
-                                    // 生成实际方法调用
-                                    var paramsList = method.parameters
-                                        .map((e) => e.name)
-                                        .toList()
-                                        .join(', ');
-                                    if (!method.isAsync) {
-                                      final call = OneLine(
-                                          depth: depth + 2,
-                                          body:
-                                              'impl.${method.name}($paramsList);');
-
-                                      if (method.returnType is AstVoid) {
-                                        ret.add(call);
-                                      } else {
-                                        ret.add(OneLine(
-                                            depth: depth + 2,
-                                            body:
-                                                '${method.returnType.javaType()} output = ${OneLine(body: call.body).build().replaceAll('\n', '')}'));
-                                      }
-                                      final isCustomType = method.returnType
-                                          .realType() is AstCustomType;
-
-                                      // != null 表达式
-                                      final neqNullExp = isCustomType
-                                          ? 'output != null ? '
-                                          : '';
-
-                                      // null 表达式
-                                      final nullExp =
-                                          isCustomType ? ' : null' : '';
-                                      ret.add(OneLine(
-                                          depth: depth + 2,
-                                          body:
-                                              'wrapped.put("${Keys.result}", $neqNullExp${method.returnType.realType().convertJavaObj2Json('output')}$nullExp);'));
-                                    } else {
-                                      final retValue = method.returnType
-                                          .realType()
-                                          .convertJavaObj2Json('ret');
-                                      paramsList +=
-                                          '${paramsList.isNotEmpty ? ', ' : ''}(ret) -> {';
-
-                                      ret.add(OneLine(
-                                          depth: depth + 2,
-                                          body:
-                                              'impl.${method.name}($paramsList'));
-
-                                      //构造 try{} catch{}
-                                      ret.add(OneLine(
-                                          depth: depth + 3, body: 'try {'));
-                                      ret.add(OneLine(
-                                          depth: depth + 4,
-                                          body:
-                                              'wrapped.put("result", $retValue);'));
-                                      ret.add(OneLine(
-                                          depth: depth + 4,
-                                          body: 'reply.reply(wrapped);'));
-                                      ret.addAll(_buildJavaCatchErrorTemplate(
-                                          isAsync: method.isAsync,
-                                          ignoreError: method.ignoreError,
-                                          baseDepth: depth + 2));
-                                    }
-
-                                    ret.addAll(_buildJavaCatchErrorTemplate(
-                                        isAsync: method.isAsync,
-                                        ignoreError: method.ignoreError,
-                                        baseDepth: depth));
-
-                                    return ret;
-                                  },
-                                      elseContent: (depth) => [
+                                                'new BasicMessageChannel<>(binaryMessenger, "${_getModuleRegisterChannelName(module, method)}", new StandardMessageCodec());'),
+                                        IfBlock(
                                             OneLine(
-                                                depth: depth,
+                                                body: 'impl != null',
+                                                hasNewline: false), (depth) {
+                                          final ret = <CodeUnit>[];
+                                          ret.add(OneLine(
+                                              depth: depth,
+                                              body:
+                                                  '${options.javaUniAPIPrefix}$kUniAPI.registerModule(impl);'));
+                                          ret.add(OneLine(
+                                              depth: depth,
+                                              body:
+                                                  'channel.setMessageHandler((message, reply) -> {'));
+                                          ret.add(OneLine(
+                                              depth: depth + 1,
+                                              body:
+                                                  'Map<String, Object> wrapped = new HashMap<>();'));
+                                          ret.add(OneLine(
+                                              depth: depth + 1, body: 'try {'));
+                                          ret.add(OneLine(
+                                              depth: depth + 2,
+                                              body:
+                                                  'Map<String, Object> params = (Map<String, Object>) message;'));
+
+                                          // 将 Channel 调用传过来的数据转换成方法调用参数
+                                          // 常规参数解析
+                                          for (final param
+                                              in method.parameters) {
+                                            if (param.type.astType() ==
+                                                typeUniCallback) {
+                                              ret.add(OneLine(
+                                                  depth: depth + 2,
+                                                  body:
+                                                      'String callbackName = (String) params.get("callback");'));
+                                              // 这里第二个参数，取出的是对应 Callback 的唯一名称，这个从 Native 带到 Dart 再带回来
+                                              final callbackClassName =
+                                                  '${module.name}.${JavaClassUniCallback.getName(method.name, param.name)}';
+                                              ret.add(OneLine(
+                                                  depth: depth + 2,
+                                                  body:
+                                                      '$callbackClassName ${param.name} = new ${module.name}.${JavaClassUniCallback.getName(method.name, param.name)}(binaryMessenger, callbackName, impl);'));
+                                              ret.add(OneLine(
+                                                  depth: depth + 2,
+                                                  body:
+                                                      '${options.objcUniAPIPrefix}$kCallbackDispatcher.registerCallback(callbackName, callback);'));
+                                            } else {
+                                              final decoded = param.type
+                                                  .convertJavaJson2Obj(
+                                                      vname:
+                                                          'params.get("${param.name}")');
+                                              ret.add(OneLine(
+                                                  depth: depth + 2,
+                                                  body:
+                                                      '${param.type.javaType()} ${param.name} = params.containsKey("${param.name}") ? $decoded;'));
+                                            }
+                                          }
+
+                                          // 生成实际方法调用
+                                          var paramsList = method.parameters
+                                              .map((e) => e.name)
+                                              .toList()
+                                              .join(', ');
+                                          if (!method.isAsync) {
+                                            final call = OneLine(
+                                                depth: depth + 2,
                                                 body:
-                                                    'channel.setMessageHandler((message, reply) -> {});')
-                                          ],
-                                      depth: depth)
-                                ]))
-                        .toList()),
+                                                    'impl.${method.name}($paramsList);');
+
+                                            if (method.returnType is AstVoid) {
+                                              ret.add(call);
+                                            } else {
+                                              ret.add(OneLine(
+                                                  depth: depth + 2,
+                                                  body:
+                                                      '${method.returnType.javaType()} output = ${OneLine(body: call.body).build().replaceAll('\n', '')}'));
+                                            }
+                                            final isCustomType =
+                                                method.returnType.realType()
+                                                    is AstCustomType;
+
+                                            // != null 表达式
+                                            final neqNullExp = isCustomType
+                                                ? 'output != null ? '
+                                                : '';
+
+                                            // null 表达式
+                                            final nullExp =
+                                                isCustomType ? ' : null' : '';
+                                            ret.add(OneLine(
+                                                depth: depth + 2,
+                                                body:
+                                                    'wrapped.put("${Keys.result}", $neqNullExp${method.returnType.realType().convertJavaObj2Json('output')}$nullExp);'));
+                                          } else {
+                                            final retValue = method.returnType
+                                                .realType()
+                                                .convertJavaObj2Json('ret');
+                                            paramsList +=
+                                                '${paramsList.isNotEmpty ? ', ' : ''}(ret) -> {';
+
+                                            ret.add(OneLine(
+                                                depth: depth + 2,
+                                                body:
+                                                    'impl.${method.name}($paramsList'));
+
+                                            //构造 try{} catch{}
+                                            ret.add(OneLine(
+                                                depth: depth + 3,
+                                                body: 'try {'));
+                                            ret.add(OneLine(
+                                                depth: depth + 4,
+                                                body:
+                                                    'wrapped.put("result", $retValue);'));
+                                            ret.add(OneLine(
+                                                depth: depth + 4,
+                                                body: 'reply.reply(wrapped);'));
+                                            ret.addAll(
+                                                _buildJavaCatchErrorTemplate(
+                                                    isAsync: method.isAsync,
+                                                    ignoreError:
+                                                        method.ignoreError,
+                                                    baseDepth: depth + 2));
+                                          }
+
+                                          ret.addAll(
+                                              _buildJavaCatchErrorTemplate(
+                                                  isAsync: method.isAsync,
+                                                  ignoreError:
+                                                      method.ignoreError,
+                                                  baseDepth: depth));
+
+                                          return ret;
+                                        },
+                                            elseContent: (depth) => [
+                                                  OneLine(
+                                                      depth: depth,
+                                                      body:
+                                                          'channel.setMessageHandler((message, reply) -> {});')
+                                                ],
+                                            depth: depth)
+                                      ]))
+                              .toList()
+                        ]),
                 EmptyLine(),
                 JavaFunction(
                     depth: depth,
@@ -374,12 +411,22 @@ abstract class ModuleGenerator {
             'api') // fixme 缺少 _Nullable
       ];
 
+  static bool isUsedUniCallback(Module module) {
+    return module.methods.any((method) => method.parameters
+        .any((param) => param.type.astType() == typeUniCallback));
+  }
+
   static String ocHeader(Module module, UniAPIOptions options) {
     registerCustomType(module.name);
     return CodeTemplate(children: [
       CommentUniAPI(),
       EmptyLine(),
       OCImport(fullImportName: 'Foundation/Foundation.h'),
+      if (isUsedUniCallback(module))
+        OCImport(
+            fullImportName:
+                CallbackDispatcherGenerator.genObjcHeaderFileName(options),
+            importType: ocImportTypeLocal),
       EmptyLine(),
       OCForwardDeclaration(
           className: 'FlutterBinaryMessenger', isProtocol: true),
@@ -391,13 +438,17 @@ abstract class ModuleGenerator {
       EmptyLine(),
       OneLine(body: 'NS_ASSUME_NONNULL_BEGIN'),
       EmptyLine(),
-      ...OCClassUniCallback.genPublicDeclarations(module.methods),
+      ...OCClassUniCallback.genPublicDeclarations(module.methods,
+          options: options),
       Comment(
           comments: [uniNativeModuleDesc, ...module.codeComments],
           commentType: CommentType.commentBlock),
       OCClassDeclaration(
           className: module.name,
           isProtocol: true,
+          parentClass: isUsedUniCallback(module)
+              ? CallbackDispatcherGenerator.disposeProtocolName(options)
+              : '',
           instanceMethods: module.methods.map((method) {
             // 不能污染原来的 Method
             final methodCopy = Method.copy(method);
@@ -539,6 +590,10 @@ abstract class ModuleGenerator {
                         blockRet.add(OneLine(
                             depth: depth + 2,
                             body: '$name.binaryMessenger = binaryMessenger;'));
+                        blockRet.add(OneLine(
+                            depth: depth + 2,
+                            body:
+                                '[${CallbackDispatcherGenerator.className(options)} registe:${name}Name callback:$name];'));
                       } else if (type != const AstVoid()) {
                         final decoded = type.convertOcJson2Obj(
                             vname: '[message objectForKey:@"$name"]');
@@ -897,7 +952,7 @@ abstract class ModuleGenerator {
                   '${options.dartOutput}/$projectName/$dotDartFileUniCallbackManager'))));
     });
 
-    const generateDepth = 3;
+    const generateDepth = 2;
     final generateList = <CodeUnit>[];
     generateList.add(OneLine(
         depth: generateDepth,

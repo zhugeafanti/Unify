@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:unify_flutter/ast/uniapi/ast_model.dart';
 import 'package:unify_flutter/ast/uniapi/ast_module.dart';
 import 'package:unify_flutter/cli/options.dart';
+import 'package:unify_flutter/generator/dispatcher.dart';
 import 'package:unify_flutter/generator/model.dart';
 import 'package:unify_flutter/generator/module_flutter.dart';
 import 'package:unify_flutter/generator/module_native.dart';
@@ -180,5 +181,45 @@ class UniAPIWorkRunner {
         '${options.objcOutput}/${UniApiGenerator.genObjcSourceFileName(options)}');
     uniAPISourceFile.createSync(recursive: true);
     uniAPISourceFile.writeAsStringSync(UniApiGenerator.ocSourceCode(options));
+  }
+}
+
+class CallbackDispatcherWorkRunner {
+  CallbackDispatcherWorkRunner({required this.options});
+
+  UniAPIOptions options;
+
+  void objcGenerator() {
+    final uniDispatcherHeaderFile = File(
+        '${options.objcOutput}/${CallbackDispatcherGenerator.genObjcHeaderFileName(options)}');
+    uniDispatcherHeaderFile.createSync(recursive: true);
+    uniDispatcherHeaderFile
+        .writeAsStringSync(CallbackDispatcherGenerator.ocHeaderCode(options));
+
+    final uniDispatcherSourceFile = File(
+        '${options.objcOutput}/${CallbackDispatcherGenerator.genObjcSourceFileName(options)}');
+    uniDispatcherSourceFile.createSync(recursive: true);
+    uniDispatcherSourceFile
+        .writeAsStringSync(CallbackDispatcherGenerator.ocSourceCode(options));
+  }
+
+  void javaGenerator() {
+    final uniDispatcherJavaFile = File(
+        '${options.javaOutputPath}/${CallbackDispatcherGenerator.genJavaDispatcherFileName(options)}');
+    uniDispatcherJavaFile.createSync(recursive: true);
+    uniDispatcherJavaFile.writeAsStringSync(
+        CallbackDispatcherGenerator.javaDispatcherCode(options));
+
+    final uniCallbackJavaFile = File(
+        '${options.javaOutputPath}/${CallbackDispatcherGenerator.genJavaCallbackFileName(options)}');
+    uniCallbackJavaFile.createSync(recursive: true);
+    uniCallbackJavaFile.writeAsStringSync(
+        CallbackDispatcherGenerator.javaCallbackCode(options));
+
+    final uniDisposeJavaFile = File(
+        '${options.javaOutputPath}/${CallbackDispatcherGenerator.genJavaCallbackDisposeFileName(options)}');
+    uniDisposeJavaFile.createSync(recursive: true);
+    uniDisposeJavaFile.writeAsStringSync(
+        CallbackDispatcherGenerator.javaCallbackDisposeCode(options));
   }
 }

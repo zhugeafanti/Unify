@@ -55,6 +55,11 @@ Future<int> isolateRun(List<String> args) async {
     runner.objcGenerator();
   }
 
+  // Generate UniCallback Dispatcher
+  final callbackDispatcherRunner = CallbackDispatcherWorkRunner(options: options);
+  callbackDispatcherRunner.javaGenerator();
+  callbackDispatcherRunner.objcGenerator();
+
   printf(r'Finished. \(≧▽≦)/');
 
   return 0;
