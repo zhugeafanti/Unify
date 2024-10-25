@@ -104,6 +104,16 @@ class GenerateApiCommand extends Command<int> {
     });
 
     _tempDir!.deleteSync(recursive: true);
+
+    // update uni_callback.dart content
+    final options = readOptions();
+    final filePath =
+        path.join(options.dartOutput, projectName, dotDartFileUniCallback);
+    final file = File(filePath);
+    file.deleteSync(recursive: true);
+    file.createSync(recursive: true);
+    file.writeAsStringSync(dartUniCallbackContent(
+        nullSafty: options.dartNullSafety, isUseCallbackManager: true));
   }
 
   /// Copy some embedded files to the project directory
