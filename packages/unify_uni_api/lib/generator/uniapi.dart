@@ -10,6 +10,8 @@ import 'package:unify_flutter/utils/template_internal/java/uni_class_methods.dar
 import 'package:unify_flutter/utils/template_internal/objc/uni_class_methods.dart';
 import 'package:unify_flutter/utils/template_internal/objc/uni_static_function.dart';
 
+import 'dispatcher.dart';
+
 abstract class UniApiGenerator {
   static String genObjcHeaderFileName(UniAPIOptions options) {
     return '${_genObjcClassName(options)}.h';
@@ -35,6 +37,8 @@ abstract class UniApiGenerator {
       CommentUniAPI(),
       EmptyLine(),
       OCImport(fullImportName: 'Foundation/Foundation.h'),
+      OCImport(fullImportName: 'Flutter/Flutter.h'),
+      EmptyLine(),
       OneLine(body: 'NS_ASSUME_NONNULL_BEGIN'),
       EmptyLine(),
       OneLine(body: '#ifndef UNI_EXPORT'),
@@ -50,8 +54,10 @@ abstract class UniApiGenerator {
       EmptyLine(),
       OneLine(body: '@interface ${_genObjcClassName(options)} : NSObject'),
       EmptyLine(),
-      OneLine(body: '/// 加载导出类'),
-      OneLine(body: '+ (void)loadExportClass;'),
+      OneLine(body: '/// 初始化'),
+      OneLine(
+          body:
+              '+ (void)init:(NSObject<FlutterBinaryMessenger>* _Nonnull)binaryMessenger;'),
       EmptyLine(),
       OneLine(body: '/// 获取协议的遵守者'),
       OneLine(body: '+ (id)get:(NSString *)className;'),
@@ -71,11 +77,12 @@ abstract class UniApiGenerator {
           importType: ocImportTypeLocal),
       OCImport(fullImportName: 'dlfcn.h'),
       OCImport(fullImportName: 'mach-o/getsect.h'),
+      OCImport(fullImportName: '${CallbackDispatcherGenerator.genObjcHeaderFileName(options)}'),
       OneLine(body: objcUniApiPrivateStaticFounction),
       EmptyLine(),
       OneLine(body: '@implementation ${_genObjcClassName(options)}'),
       EmptyLine(),
-      OneLine(body: objcUniApiClassMethods(_genSectname(options))),
+      OneLine(body: objcUniApiClassMethods(_genSectname(options), options)),
       OneLine(body: '@end')
     ]).build();
   }
@@ -96,9 +103,10 @@ abstract class UniApiGenerator {
       EmptyLine(),
       JavaImport(fullClassName: 'java.util.HashMap'),
       JavaImport(fullClassName: 'java.util.Map'),
+      JavaImport(fullClassName: 'io.flutter.plugin.common.BinaryMessenger'),
       EmptyLine(),
       OneLine(body: 'public class ${_genJavaClassName(options)} {'),
-      OneLine(body: javaUniApiClassMethods),
+      OneLine(body: javaUniApiClassMethods(options)),
       OneLine(body: '}')
     ]).build();
   }

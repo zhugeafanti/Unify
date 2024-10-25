@@ -1,4 +1,15 @@
-String objcUniApiClassMethods(String sectname) => '''
+import 'package:unify_flutter/cli/options.dart';
+import 'package:unify_flutter/generator/dispatcher.dart';
+
+String objcUniApiClassMethods(String sectname, UniAPIOptions options) => '''
++ (void)init:(NSObject<FlutterBinaryMessenger>* _Nonnull)binaryMessenger {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [self loadExportClass];
+        [${CallbackDispatcherGenerator.className(options)} init: binaryMessenger];
+    });
+}
+
 + (void)loadExportClass {
   static int __UNIAPI = 0;
   static dispatch_once_t onceToken;
