@@ -43,6 +43,8 @@ const ignoreErrorAnnotation = 'IgnoreError';
 /// Default buid-in type
 const typeUniCallbackManager = 'UniCallbackManager';
 const typeUniCallback = 'UniCallback';
+const kCallbackDispatcher = 'UniCallbackDispatcher';
+const kUniCallbackDispose = 'UniCallbackDispose';
 const typeFlutterError = 'FlutterError';
 const typeFuture = 'Future';
 
