@@ -9,7 +9,8 @@
 - (BOOL)application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
   [GeneratedPluginRegistrant registerWithRegistry:self];
-  [UDUniAPI loadExportClass];
+  FlutterViewController *flutterVC = (FlutterViewController*)self.window.rootViewController;
+  [UDUniAPI init:flutterVC.binaryMessenger];
 
   // 在原生侧使用 Unify 生成的接口 getDeviceInfo:fail:
   DeviceInfoServiceVendor* vendor = [UDUniAPI get:@"DeviceInfoServiceVendor"];

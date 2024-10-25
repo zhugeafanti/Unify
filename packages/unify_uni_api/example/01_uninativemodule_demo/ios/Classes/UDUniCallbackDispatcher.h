@@ -4,23 +4,16 @@
 
 #import <Foundation/Foundation.h>
 #import <Flutter/Flutter.h>
-
 NS_ASSUME_NONNULL_BEGIN
 
-#ifndef UNI_EXPORT
-#define UNI_EXPORT(className) \
-__attribute__((used, section("__DATA , ud_uni_api"))) \
-static char *__uni_export_class_##className##__ = ""#className"";
-#endif
+@protocol UDUniCallbackDispose
+@required
+- (void)disposeCallback:(id)params;
+@end
 
-@interface UDUniAPI : NSObject
-
-/// 初始化
+@interface UDUniCallbackDispatcher : NSObject
 + (void)init:(NSObject<FlutterBinaryMessenger>* _Nonnull)binaryMessenger;
-
-/// 获取协议的遵守者
-+ (id)get:(NSString *)className;
-
++ (void)registe:(NSString * _Nonnull)name callback:(id _Nonnull)subscriber;
 @end
 
 NS_ASSUME_NONNULL_END
