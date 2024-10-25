@@ -29,7 +29,7 @@ class UniCallbackManager {
       List<UniCallback> callbacks = [];
       callbacks.addAll(uniCallbackCache.values);
       for (final callback in callbacks) {
-        $generate
+$generate
         if (callback.getType() == int) {
           (callback as UniCallback<int>).onEvent(data as int, disposable);
           continue;
