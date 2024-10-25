@@ -47,7 +47,7 @@ abstract class ModuleGenerator {
         if (param.type.astType() == typeUniCallback) {
           ret.add(JavaClassUniCallback(
               method.name, param.name, param.type.generics[0],
-              depth: depth, channelSuffix: options.javaUniAPIPrefix.suffix()));
+              depth: depth, javaUniAPIPrefix: options.javaUniAPIPrefix));
         }
       }
 
