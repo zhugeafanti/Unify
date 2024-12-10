@@ -12,7 +12,7 @@
 
 - (void)notifyLifeCycle:(UniPageSubscriptionLifecycle)lifeCycle {
     [[UniPageMsgCenter defaultCenter] postMessage:@{kLifecycle: @(lifeCycle),
-                                                           kMsgSender: self
+                                                    kMsgSender: self
                                                   }];
 }
 
