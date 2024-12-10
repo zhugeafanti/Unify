@@ -8,6 +8,7 @@
 #import <UIKit/UIKit.h>
 #import <Flutter/Flutter.h>
 #import "UniPageProtocol.h"
+#import "UniPageLifeCycle.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -16,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 ///  - [[NSNotificationCenter defaultCenter] postNotificationName:NotifyUniPageFlutterViewControllerWillDealloc object:self];
 FOUNDATION_EXTERN NSString *const NotifyUniPageFlutterViewControllerWillDealloc;
 
-@interface UniPage : UIView
+@interface UniPage : UIView<UniPageLifeCycle>
 
 @property (nonatomic, weak) id<UniPageProtocol> delegate;
 
@@ -74,6 +75,11 @@ FOUNDATION_EXTERN NSString *const NotifyUniPageFlutterViewControllerWillDealloc;
 
 /// 获取当前视图被添加在哪个VC上的id标识，返回hash值
 - (NSUInteger)getOwnerId;
+
+- (UIViewController*)ownerVC;
+
+/// 订阅 UniPage 所属 VC 的生命周期
+- (void)subscribeLifeCycle;
 
 @end
 
