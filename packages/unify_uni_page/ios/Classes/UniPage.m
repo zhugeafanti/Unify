@@ -189,7 +189,7 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
     
 }
 
-- (BOOL) isSelfOrChildVC:(UIViewController*)child of:(UIViewController*)parent {
+- (BOOL)isSelfOrChildVC:(UIViewController*)child of:(UIViewController*)parent {
     if (child == parent) {
         return YES;
     }
