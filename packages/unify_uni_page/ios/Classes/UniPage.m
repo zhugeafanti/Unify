@@ -17,6 +17,7 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
 
 @property (nonatomic, assign) BOOL isPosted;
 @property (nonatomic, assign) NSUInteger ownerId;
+@property (nonatomic, weak) UIViewController* ownerVC;
 
 @end
 
@@ -101,10 +102,8 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
 }
 
 - (void)postCreate {
-    self.ownerId = [[self currentController] hash];
-    [self viewDidLoad];
-    [self viewWillAppear];
-    [self viewDidAppear];
+    _ownerVC = [self currentController];
+    _ownerId = [_ownerVC hash];
 }
 
 - (void)onForeground {
@@ -124,7 +123,7 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
 }
 
 - (UIViewController*)ownerVC {
-    return [self currentController];
+    return _ownerVC;
 }
 
 #pragma mark - life cycle
@@ -136,13 +135,17 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
         UniPageSubscriptionLifecycle lifeCycle = [info[kLifecycle] intValue];
         UIViewController *vc = info[kMsgSender];
         /*
-          判断当前视图所属的 VC 是否正在展示
-            只有正在展示的 UniPage 才感知VC的生命周期，未展示的不感知VC生命周期
-        */
-        if([strongSelf isSelfOrChildVC:strongSelf.currentController of:vc]) {
+         判断当前视图所属的 VC 是否正在展示
+         只有正在展示的 UniPage 才感知VC的生命周期，未展示的不感知VC生命周期
+         */
+        if([strongSelf isSelfOrChildVC:strongSelf.ownerVC of:vc]) {
             [strongSelf execLifeCycle: lifeCycle];
         }
     } observer:self];
+}
+
+- (void)unsubscribeLifeCycle {
+    [[UniPageMsgCenter defaultCenter] removeObserver:self];
 }
 
 //组件创建
@@ -164,10 +167,10 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
     NSString *selStr = self.lifeCycleSelectors[lifeCycle];
     SEL selector = NSSelectorFromString(selStr);
     if([self respondsToSelector:selector]){
-/*
- * 处理⚠️信息：performSelector may cause a leak because its selector unknow [-Warc-performSelector-leaks]
- * 由 clang 编译器去处理
- */
+        /*
+         * 处理⚠️信息：performSelector may cause a leak because its selector unknow [-Warc-performSelector-leaks]
+         * 由 clang 编译器去处理
+         */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         [self performSelector:selector];

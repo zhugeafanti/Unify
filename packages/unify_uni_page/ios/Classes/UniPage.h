@@ -81,6 +81,9 @@ FOUNDATION_EXTERN NSString *const NotifyUniPageFlutterViewControllerWillDealloc;
 /// 订阅 UniPage 所属 VC 的生命周期
 - (void)subscribeLifeCycle;
 
+/// 取消订阅 UniPage 所属 VC 的生命周期
+- (void)unsubscribeLifeCycle;
+
 @end
 
 NS_ASSUME_NONNULL_END
