@@ -10,7 +10,7 @@
 
 @implementation UIViewController (NotifyLifeCycle)
 
-- (void)notifyLifeCycle:(UniPageSubscriptionLifecycle)lifeCycle {
+- (void)uniNotifyLifeCycle:(UniPageSubscriptionLifecycle)lifeCycle {
     [[UniPageMsgCenter defaultCenter] postMessage:@{kLifecycle: @(lifeCycle),
                                                     kMsgSender: self
                                                   }];

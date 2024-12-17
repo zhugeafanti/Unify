@@ -35,7 +35,7 @@ static void ExecOnMainQueue(dispatch_block_t block)
 ////////////////////////////////////////////////////
 
 @interface UniPageEventObject : NSObject
-@property (nonatomic, copy) UniPageMsgEvent eventHandler;
+@property (nonatomic, copy) UniPageLifeCycleEvent eventHandler;
 @end
 
 @implementation UniPageEventObject
@@ -110,7 +110,7 @@ static char UniPageEventSetKey;
     return sharedInstance;
 }
 
-- (void)addEvent:(UniPageMsgEvent)event observer:(NSObject *)observer {
+- (void)registerObserver:(NSObject *)observer event:(UniPageLifeCycleEvent)event {
     if (!event) {
         return;
     }
@@ -143,7 +143,7 @@ static char UniPageEventSetKey;
     });
 }
 
-- (void)removeObserver:(NSObject *)observer {
+- (void)unregisterObserver:(NSObject *)observer {
     ExecOnMainQueue((^{
         NSMapTable *msgDic = self.mapTable;
         NSString *observerKey = [NSString stringWithFormat:@"%p", observer.evSet];

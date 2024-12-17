@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface UIViewController (NotifyLifeCycle)
 
-- (void)notifyLifeCycle:(UniPageSubscriptionLifecycle)lifeCycle;
+- (void)uniNotifyLifeCycle:(UniPageSubscriptionLifecycle)lifeCycle;
 
 @end
 

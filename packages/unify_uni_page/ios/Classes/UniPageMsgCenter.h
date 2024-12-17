@@ -9,8 +9,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class UniPageEventSet;
-typedef void(^UniPageMsgEvent)(id info);
+typedef void(^UniPageLifeCycleEvent)(id info);
 
 @interface UniPageMsgCenter : NSObject
 
@@ -22,7 +21,7 @@ typedef void(^UniPageMsgEvent)(id info);
  @param event event事件回调
  @param observer 监听者
  */
-- (void)addEvent:(UniPageMsgEvent)event observer:(NSObject *)observer;
+- (void)registerObserver:(NSObject *)observer event:(UniPageLifeCycleEvent)event;
 
 /**
  发送消息
@@ -36,7 +35,7 @@ typedef void(^UniPageMsgEvent)(id info);
 
  @param observer 监听者
  */
-- (void)removeObserver:(NSObject *)observer;
+- (void)unregisterObserver:(NSObject *)observer;
 
 @end
 

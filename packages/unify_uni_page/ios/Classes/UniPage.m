@@ -130,7 +130,7 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
 
 - (void)subscribeLifeCycle {
     __weak typeof(self) weakSelf = self;
-    [[UniPageMsgCenter defaultCenter] addEvent:^(id  _Nonnull info) {
+    [[UniPageMsgCenter defaultCenter] registerObserver:self event:^(id  _Nonnull info) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         UniPageSubscriptionLifecycle lifeCycle = [info[kLifecycle] intValue];
         UIViewController *vc = info[kMsgSender];
@@ -141,11 +141,11 @@ NSString *const NotifyUniPageFlutterViewControllerWillDealloc = @"NotifyUniPageF
         if([strongSelf isSelfOrChildVC:strongSelf.ownerVC of:vc]) {
             [strongSelf execLifeCycle: lifeCycle];
         }
-    } observer:self];
+    }];
 }
 
 - (void)unsubscribeLifeCycle {
-    [[UniPageMsgCenter defaultCenter] removeObserver:self];
+    [[UniPageMsgCenter defaultCenter] unregisterObserver:self];
 }
 
 //组件创建
