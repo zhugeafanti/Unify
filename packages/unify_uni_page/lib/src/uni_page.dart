@@ -12,11 +12,7 @@ import 'constants.dart';
 typedef CommonParamsCallback = Map<String, dynamic> Function();
 
 class UniPage extends StatefulWidget {
-  const UniPage(this.viewType,
-      {Key? key,
-      this.createParams,
-      this.onCreateCommonParams,
-      required this.controller})
+  const UniPage(this.viewType, {Key? key, this.createParams, this.onCreateCommonParams, required this.controller})
       : super(key: key);
 
   final String viewType;
