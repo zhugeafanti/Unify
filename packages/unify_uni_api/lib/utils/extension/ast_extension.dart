@@ -1,5 +1,7 @@
 import 'package:unify_flutter/ast/base.dart';
+import 'package:unify_flutter/ast/basic/ast_bool.dart';
 import 'package:unify_flutter/ast/basic/ast_custom.dart';
+import 'package:unify_flutter/ast/basic/ast_double.dart';
 import 'package:unify_flutter/ast/basic/ast_int.dart';
 import 'package:unify_flutter/ast/basic/ast_list.dart';
 import 'package:unify_flutter/ast/basic/ast_map.dart';
@@ -191,6 +193,14 @@ extension AstTypeExtension on AstType {
 
   String? convertOcJson2Obj({String vname = '[message objectForKey:@"data"]'}) {
     if (containsCustomType() == false) {
+      // Channel 传来的数字/布尔被 StandardMessageCodec 装箱成 NSNumber,
+      // 非空标量类型需从 NSNumber 拆箱回标量,与 ocType() 的映射保持一致。
+      final rt = realType();
+      if (!rt.maybeNull) {
+        if (rt is AstInt) return '[$vname integerValue]';
+        if (rt is AstDouble) return '[$vname doubleValue]';
+        if (rt is AstBool) return '[$vname boolValue]';
+      }
       return vname;
     }
 
@@ -224,8 +234,13 @@ extension AstTypeExtension on AstType {
       }
     }
 
-    if (realType() is AstVoid) {
+    final rt = realType();
+    if (rt is AstVoid) {
       return 'nil';
+    }
+    // 非空标量返回值/字段需装箱成 NSNumber,才能放入回传的 NSDictionary。
+    if (!rt.maybeNull && (rt is AstInt || rt is AstDouble || rt is AstBool)) {
+      return '@($valueName)';
     }
     return valueName;
   }
