@@ -1,3 +1,7 @@
+## 3.0.6
+
+* fix: [iOS] UniAPI 生成的 OC 接口，基础类型(int/double/bool)统一装箱为 NSNumber*，与 Dart 声明类型不一致；改为映射为原生标量(NSInteger/double/BOOL)使参数与返回值类型对齐声明，可空类型及集合泛型实参位置仍回退 NSNumber*。同步修复 UniNativeModule / UniFlutterModule / UniCallback 三条通道中标量装箱/拆箱的胶水代码。
+
 ## 3.0.5
 
 * fix: Flutter 与原生侧 UNICallback 的 key 名称不一致导致，UNICallback析构事件获取名称时 null，引发异常
