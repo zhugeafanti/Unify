@@ -358,7 +358,7 @@ abstract class FlutterModuleGenerator {
                       funcBody.add(OneLine(
                           depth: depth + 2,
                           body:
-                              'if (reply && result) result(${method.returnType.realType().convertOcJson2Obj(vname: 'reply')});'));
+                              'if (reply && result) result(${method.returnType.realType().convertOcJson2Obj(vname: 'reply', asObject: true)});'));
                       funcBody.add(OneLine(depth: depth + 1, body: '}];'));
                     }
 
